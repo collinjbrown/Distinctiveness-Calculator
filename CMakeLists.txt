@@ -15,6 +15,12 @@ set(BASE_SRCS
 # Add source to this project's executable.
 add_executable (distinctiveness-calculator ${BASE_SRCS})
 
+add_custom_target(copy_assets
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_LIST_DIR}/copy-assets.cmake
+)
+
+add_dependencies(distinctiveness-calculator copy_assets)
+
 if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
      set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE INTERNAL "No dev warnings")
 endif()
