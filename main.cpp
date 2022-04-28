@@ -3,10 +3,12 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <io.h>
 #include <fcntl.h>
+#include <codecvt>
 using namespace std;
 
 enum class Occlusivity { occlusive, continuant, vibrant };
@@ -64,28 +66,40 @@ struct Phoneme
 	}
 };
 
+vector<wstring> splitString(const wstring& str, const wstring& delimiter)
+{
+	vector<wstring> strings;
+
+	wstring::size_type pos = 0;
+	wstring::size_type prev = 0;
+
+	while ((pos = str.find(delimiter, prev)) != wstring::npos)
+	{
+		strings.push_back(str.substr(prev, pos - prev));
+		prev = pos + 1;
+	}
+
+	strings.push_back(str.substr(prev));
+
+	return strings;
+}
+
+std::wstring readFile(const char* filename)
+{
+	std::wifstream wif(filename);
+	wif.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
+	std::wstringstream wss;
+	wss << wif.rdbuf();
+	return wss.str();
+}
+
 int wmain(void)
 {
-	_setmode(_fileno(stdout), _O_U16TEXT);
+	_setmode(_fileno(stdout), _O_U8TEXT);
 	std::wcout << L"Testing unicode -- English -- Ελληνικά -- Español." << std::endl;
 
-	wstring txt;
-	vector<wstring> lines;
-	wifstream source("assets/source.txt");
-
-	if (source.is_open())
-	{
-		while (getline(source, txt))
-		{
-			std::wcout << txt + L"\n";
-			lines.push_back(txt);
-		}
-		source.close();
-	}
-	else
-	{
-		std::wcout << "The source file either doesn't exist or isn't accessible.";
-	}
+	wstring txt = readFile("assets/source.txt");
+	vector<wstring> lines = splitString(txt, L"\n");
 
 	vector<Phoneme*> phonemes;
 
@@ -95,7 +109,7 @@ int wmain(void)
 
 		bool valid = false;
 		Phoneme* p;
-		
+
 		if (c.find(L"t͡s̪") != std::string::npos ||
 			c.find(L"t̻͡s̪") != std::string::npos ||
 			c.find(L"ts̪") != std::string::npos)
@@ -694,13 +708,19 @@ int wmain(void)
 	}
 
 	wofstream myfile;
-	
-	myfile.open("calculations.txt");
-	myfile << "Output\n------\n";
+
+	myfile.open("assets/calculations.txt");
+	std::locale utf8_locale(std::locale(), new codecvt_utf8<unsigned char>);
+	myfile.imbue(utf8_locale);
+
+	myfile << L"Phonemes Found: " + std::to_wstring(phonemes.size()) + L"\n";
+	myfile << L"Output\n------\n";
 
 	for (int i = 0; i < phonemes.size(); i++)
 	{
-		myfile << phonemes[i]->ipa + L"\n";
+		wstring w = phonemes[i]->ipa + L"\n";
+		wcout << w;
+		myfile << w;
 	}
 	
 	myfile.close();
